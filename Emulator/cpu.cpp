@@ -1,10 +1,7 @@
 #include "cpu.h"
-#include <iostream>
 #include <stdint.h>
+#include <iostream>
 
-#include "cpu.h"
-#include <stdint.h>
-#include <iostream>
 
 void CPU::op_nop(uint8_t operand){
     // nop
@@ -30,32 +27,65 @@ void CPU::op_id(uint8_t operand){
     bool dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
     uint8_t reg = (operand & 0b111); // mask out the register index, this time simple
 
+    clr_flags(FLAG_S | FLAG_Z | FLAG_V);
+
     if (dec){
         GPR[reg]--;
-        FLAGS.V = GPR[reg] == 0b01111111; //signed decrement caused err
+        if (GPR[reg] == 0b01111111) FLAGS |= FLAG_V;
     } else {
         GPR[reg]++;
-        FLAGS.V = GPR[reg] == 0b10000000; //sign bit flipped wrong
+        if (GPR[reg] == 0b10000000) FLAGS |= FLAG_V;
     }
 
-    FLAGS.S = GPR[reg] & 0b10000000;
-    FLAGS.Z = GPR[reg] == 0;
+    if (GPR[reg] & 0b10000000) FLAGS |= FLAG_S;
+    if (GPR[reg] == 0) FLAGS |= FLAG_Z;
     
 }
-void CPU::op_jmps(uint8_t operand){
+void CPU::op_jmps(uint8_t operand, uint8_t address){
     // jmp if any flag in mask is set
-    //
+    // operand mmmm mask (SZCV), 8 bit address
+
+    bool jmp = (operand & FLAGS);
+
+    if (jmp) {
+        PC = address;
+    }
+
 }
-void CPU::op_jmpc(uint8_t operand){
+void CPU::op_jmpc(uint8_t operand, uint8_t address){
     // jump if all flags in mask are clear
+    // operand mmmm mask (SZCV), 8 bit address
+
+    bool jmp = (operand & FLAGS);
+    jmp = !jmp;
+
+    if (jmp) {
+        PC = address;
+    }
 }
 void CPU::op_cpt(uint8_t operand){
     // compare/test
 }
 void CPU::op_as(uint8_t operand){
     // add/subtract
+    // operand drrr d=0 is add, d=1 is subtract
+
+    clr_flags(FLAG_S | FLAG_Z | FLAG_C |FLAG_V);
+
+    bool sub = operand & 0b1000;
+    uint8_t reg = operand & 0b111;
+
+    uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
+
+    if (sub) sum = ACC + ~(GPR[reg]) + 1;
+    else sum = ACC + GPR[reg];
+
+    if (sum & 0b100000000) FLAGS &= FLAG_C;
+    if (!sum) FLAGS &= FLAG_Z;
+    
+
 }
-void CPU::op_asi(uint8_t operand){
+void CPU::op_asi(uint8_t operand, uint8_t immediate){
     // add/subtract immediate
 }
 void CPU::op_nt(uint8_t operand){
@@ -73,9 +103,9 @@ void CPU::op_rtsh(uint8_t operand){
 void CPU::op_so(uint8_t operand){
     // stack operation
 }
-void CPU::op_cr(uint8_t operand){
+void CPU::op_cr(uint8_t operand, uint8_t address){
     // call/return
 }
-void CPU::op_ldi(uint8_t operand){
+void CPU::op_ldi(uint8_t operand, uint8_t immediate){
     // load immediate
 }
