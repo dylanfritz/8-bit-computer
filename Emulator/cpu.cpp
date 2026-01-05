@@ -74,7 +74,24 @@ void CPU::op_cpt(uint8_t operand){
         if (res & 0b10000000) FLAGS |= FLAG_S;
     } else { //cmp (arithmetic sub, no ACC update)
         clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
-        uint8_t res = ACC + ~(GPR[reg]) + 1;
+
+        bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
+        bool as = (ACC & 0b10000000); //ACC sign bit before operation
+
+        uint16_t sum = ACC + ~(GPR[reg]) + 1;
+        
+
+        // overflow flag V is difficult
+        // overflow occurs when sign of operands don't match but sign of output differs from first operand FOR SIGNED SUBTRACTION
+
+        uint8_t res = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
+
+        bool ss = (res & 0b10000000); //res sign bit AFTER operation
+
+        if ((rs != as) && (ss != as)) FLAGS |= FLAG_V;
+        if (sum & 0x100) FLAGS |= FLAG_C;
+        if (res == 0) FLAGS |= FLAG_Z;
+        if (res & 0b10000000) FLAGS |= FLAG_S;
 
     }
 }
@@ -118,18 +135,11 @@ void CPU::op_as(uint8_t operand){
         // overflow occurs when sign of operands match but sign of output differs FOR SIGNED ADDITION
 
         if ((rs == as) && (ss != as)) FLAGS |= FLAG_V;
-    }
-
-    
-
-    
+    } 
 
     if (sum & 0b100000000) FLAGS |= FLAG_C; // if 0000 0001 xxxx xxxx in uint16, carry occured
     if (ACC & 0b10000000) FLAGS |= FLAG_S; // if 1xxx xxxx sign is 1
-
     if (ACC == 0) FLAGS |= FLAG_Z;
-
-
 }
 void CPU::op_asi(uint8_t operand, uint8_t immediate){
     // add/subtract immediate
