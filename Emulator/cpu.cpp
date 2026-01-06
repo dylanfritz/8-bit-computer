@@ -3,6 +3,12 @@
 #include <iostream>
 
 
+void CPU::update_SZ_flags(uint8_t reg){
+    clr_flags(FLAG_S | FLAG_Z);
+    if (reg & 0b10000000) FLAGS |= FLAG_S;
+    if (reg == 0) FLAGS |= FLAG_Z;
+}
+
 void CPU::op_nop(uint8_t operand){
     // nop
 }
@@ -24,12 +30,12 @@ void CPU::op_id(uint8_t operand){
     // increment decrement
     // operand drrr
 
-    bool dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
+    bool is_dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
     uint8_t reg = (operand & 0b111); // mask out the register index, this time simple
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_V);
 
-    if (dec){
+    if (is_dec){
         GPR[reg]--;
         if (GPR[reg] == 0b01111111) FLAGS |= FLAG_V;
     } else {
@@ -37,8 +43,7 @@ void CPU::op_id(uint8_t operand){
         if (GPR[reg] == 0b10000000) FLAGS |= FLAG_V;
     }
 
-    if (GPR[reg] & 0b10000000) FLAGS |= FLAG_S;
-    if (GPR[reg] == 0) FLAGS |= FLAG_Z;
+    CPU::update_SZ_flags(GPR[reg]);
     
 }
 void CPU::op_jmps(uint8_t operand, uint8_t address){
@@ -63,10 +68,10 @@ void CPU::op_cpt(uint8_t operand){
     // compare/test
     // operand drrr
 
-    bool test = (operand & 0b1000);
+    bool is_test = (operand & 0b1000);
     uint8_t reg = (operand & 0b111);
 
-    if (test) { // logical AND, no ACC update
+    if (is_test) { // logical AND, no ACC update
         clr_flags(FLAG_S | FLAG_Z);
         uint8_t res = (GPR[reg] & ACC);
 
@@ -90,8 +95,7 @@ void CPU::op_cpt(uint8_t operand){
 
         if ((rs != as) && (ss != as)) FLAGS |= FLAG_V;
         if (sum & 0x100) FLAGS |= FLAG_C;
-        if (res == 0) FLAGS |= FLAG_Z;
-        if (res & 0b10000000) FLAGS |= FLAG_S;
+        CPU::update_SZ_flags(res);
 
     }
 }
@@ -101,7 +105,7 @@ void CPU::op_as(uint8_t operand){
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
 
-    bool sub = operand & 0b1000;
+    bool is_sub = operand & 0b1000;
     uint8_t reg = operand & 0b111;
 
     bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
@@ -110,7 +114,7 @@ void CPU::op_as(uint8_t operand){
     uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
     bool ss;
 
-    if (sub) {
+    if (is_sub) {
         sum = ACC + ~(GPR[reg]) + 1;
 
         ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
@@ -138,8 +142,7 @@ void CPU::op_as(uint8_t operand){
     } 
 
     if (sum & 0b100000000) FLAGS |= FLAG_C; // if 0000 0001 xxxx xxxx in uint16, carry occured
-    if (ACC & 0b10000000) FLAGS |= FLAG_S; // if 1xxx xxxx sign is 1
-    if (ACC == 0) FLAGS |= FLAG_Z;
+    CPU::update_SZ_flags(ACC);
 }
 void CPU::op_asi(uint8_t operand, uint8_t immediate){
     // add/subtract immediate
@@ -147,7 +150,7 @@ void CPU::op_asi(uint8_t operand, uint8_t immediate){
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
 
-    bool sub = operand & 0b1;
+    bool is_sub = operand & 0b1;
 
     bool is = (immediate & 0b10000000); //immediate sign bit before operation, used for overflow detection
     bool as = (ACC & 0b10000000); //ACC sign bit before operation
@@ -155,7 +158,7 @@ void CPU::op_asi(uint8_t operand, uint8_t immediate){
     uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
     bool ss;
 
-    if (sub) {
+    if (is_sub) {
         sum = ACC + ~(immediate) + 1;
 
         ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
@@ -183,14 +186,36 @@ void CPU::op_asi(uint8_t operand, uint8_t immediate){
     } 
 
     if (sum & 0b100000000) FLAGS |= FLAG_C; // if 0000 0001 xxxx xxxx in uint16, carry occured
-    if (ACC & 0b10000000) FLAGS |= FLAG_S; // if 1xxx xxxx sign is 1
-    if (ACC == 0) FLAGS |= FLAG_Z;
+    CPU::update_SZ_flags(ACC);
 }
 void CPU::op_nt(uint8_t operand){
     // not/complement
+    // operand xxxd = 0 ones comp (not) d = 1 twos comp (complement)
+
+    clr_flags(FLAG_S | FLAG_Z);
+
+    bool is_comp = operand & 0b1;
+
+    if (is_comp) ACC = ~ACC + 1;
+    else ACC = ~ACC;
+
+    CPU::update_SZ_flags(ACC);
+
 }
 void CPU::op_anor(uint8_t operand){
     // and/or
+    // operand drrr d = 0 AND, d = 1 OR
+
+    clr_flags(FLAG_S | FLAG_Z);
+    bool is_or = operand & 0b1000;
+    uint8_t reg = operand & 0b111;
+
+    if (is_or) ACC |= GPR[reg];
+    else ACC &= GPR[reg];
+
+
+    CPU::update_SZ_flags(ACC);
+
 }
 void CPU::op_xor(uint8_t operand){
     // xor/bit toggle

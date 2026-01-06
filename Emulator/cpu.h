@@ -22,6 +22,9 @@ class CPU {
             FLAGS &= ~mask;
         }
 
+        void update_SZ_flags(uint8_t reg);
+
+
         void op_nop(uint8_t operand);
         void op_ma(uint8_t operand);
         void op_id(uint8_t operand);
