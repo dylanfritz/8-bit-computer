@@ -30,8 +30,8 @@ void CPU::op_id(uint8_t operand){
     // increment decrement
     // operand drrr
 
-    bool is_dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
-    uint8_t reg = (operand & 0b111); // mask out the register index, this time simple
+    const bool is_dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
+    const uint8_t reg = (operand & 0b111); // mask out the register index, this time simple
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_V);
 
@@ -50,7 +50,7 @@ void CPU::op_jmps(uint8_t operand, uint8_t address){
     // jmp if any flag in mask is set
     // operand mmmm mask (SZCV), 8 bit address
 
-    bool jmp = (operand & FLAGS);
+    const bool jmp = (operand & FLAGS);
 
     if (jmp) PC = address;
 
@@ -68,8 +68,8 @@ void CPU::op_cpt(uint8_t operand){
     // compare/test
     // operand drrr
 
-    bool is_test = (operand & 0b1000);
-    uint8_t reg = (operand & 0b111);
+    const bool is_test = (operand & 0b1000);
+    const uint8_t reg = (operand & 0b111);
 
     if (is_test) { // logical AND, no ACC update
         clr_flags(FLAG_S | FLAG_Z);
@@ -105,11 +105,11 @@ void CPU::op_as(uint8_t operand){
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
 
-    bool is_sub = operand & 0b1000;
-    uint8_t reg = operand & 0b111;
+    const bool is_sub = operand & 0b1000;
+    const uint8_t reg = operand & 0b111;
 
-    bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
-    bool as = (ACC & 0b10000000); //ACC sign bit before operation
+    const bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
+    const bool as = (ACC & 0b10000000); //ACC sign bit before operation
 
     uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
     bool ss;
@@ -150,10 +150,10 @@ void CPU::op_asi(uint8_t operand, uint8_t immediate){
 
     clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
 
-    bool is_sub = operand & 0b1;
+    const bool is_sub = operand & 0b1;
 
-    bool is = (immediate & 0b10000000); //immediate sign bit before operation, used for overflow detection
-    bool as = (ACC & 0b10000000); //ACC sign bit before operation
+    const bool is = (immediate & 0b10000000); //immediate sign bit before operation, used for overflow detection
+    const bool as = (ACC & 0b10000000); //ACC sign bit before operation
 
     uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
     bool ss;
@@ -194,7 +194,7 @@ void CPU::op_nt(uint8_t operand){
 
     clr_flags(FLAG_S | FLAG_Z);
 
-    bool is_comp = operand & 0b1;
+    const bool is_comp = operand & 0b1;
 
     if (is_comp) ACC = ~ACC + 1;
     else ACC = ~ACC;
@@ -207,8 +207,8 @@ void CPU::op_anor(uint8_t operand){
     // operand drrr d = 0 AND, d = 1 OR
 
     clr_flags(FLAG_S | FLAG_Z);
-    bool is_or = operand & 0b1000;
-    uint8_t reg = operand & 0b111;
+    const bool is_or = operand & 0b1000;
+    const uint8_t reg = operand & 0b111;
 
     if (is_or) ACC |= GPR[reg];
     else ACC &= GPR[reg];
@@ -221,8 +221,8 @@ void CPU::op_xor(uint8_t operand){
     // xor/bit toggle
     // operand drrr rrr register select for xor, bit select for toggle
 
-    bool is_tog = operand & 0b1000;
-    uint8_t index = operand & 0b111;
+    const bool is_tog = operand & 0b1000;
+    const uint8_t index = operand & 0b111;
 
     if (is_tog) ACC ^= (1<<index);
     else ACC ^= GPR[index];
@@ -231,6 +231,29 @@ void CPU::op_xor(uint8_t operand){
 void CPU::op_rtsh(uint8_t operand){
     // rotate/shift
     //operand xasd 
+
+    const bool is_ari = operand & 0b100;
+    const bool is_rot = !(operand & 0b10);
+    const bool is_right = operand & 0b1;
+
+    const bool orig_carry = FLAGS & FLAG_C;
+
+    clr_flags(FLAG_C | FLAG_S | FLAG_Z);
+
+    if (is_right){
+        const bool orig_sign = ACC & 0x80;
+        const bool lsb = ACC & 0b1;
+        ACC >>= 1;
+        if (is_ari && !is_rot && orig_sign) ACC |= 0x80;
+        if (is_rot && orig_carry) ACC |= 0x80;
+        if (lsb) FLAGS |= FLAG_C;
+    } else { //left
+        const bool msb = ACC & 0x80;
+        ACC <<= 1;
+        if (is_rot && orig_carry) ACC |= 0b1;
+        if (msb) FLAGS |= FLAG_C;
+    }
+    update_SZ_flags(ACC);
 }
 void CPU::op_so(uint8_t operand){
     // stack operation
