@@ -219,9 +219,18 @@ void CPU::op_anor(uint8_t operand){
 }
 void CPU::op_xor(uint8_t operand){
     // xor/bit toggle
+    // operand drrr rrr register select for xor, bit select for toggle
+
+    bool is_tog = operand & 0b1000;
+    uint8_t index = operand & 0b111;
+
+    if (is_tog) ACC ^= (1<<index);
+    else ACC ^= GPR[index];
+    CPU::update_SZ_flags(ACC);
 }
 void CPU::op_rtsh(uint8_t operand){
     // rotate/shift
+    //operand xasd 
 }
 void CPU::op_so(uint8_t operand){
     // stack operation
