@@ -7,6 +7,9 @@ constexpr uint8_t FLAG_Z = 0b00000100;
 constexpr uint8_t FLAG_C = 0b00000010;
 constexpr uint8_t FLAG_V = 0b00000001;
 
+constexpr uint8_t STACK_BASE = 0xFF;
+constexpr uint8_t RESET_VECTOR = 0;
+
 class CPU {
     private:
 
@@ -17,6 +20,7 @@ class CPU {
         uint8_t ACC;
         uint8_t SP;
         uint8_t FLAGS;
+        uint8_t IR;
 
         inline void clr_flags(uint8_t mask){
             FLAGS &= ~mask;

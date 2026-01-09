@@ -1,6 +1,19 @@
 #include "cpu.h"
 #include <stdint.h>
 
+void CPU::reset(){
+    for(uint8_t i = 0; i < 8; i++) { GPR[i] = 0; }
+    PC = RESET_VECTOR + 1;
+    ACC = 0;
+    SP = STACK_BASE;
+    FLAGS = 0;
+    IR = memory[RESET_VECTOR];
+}
+
+void CPU::step(){
+
+}
+
 
 void CPU::h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_ACC){ // computes a + b or a + (-b) and optionally stores the result in ACC
 
@@ -64,7 +77,7 @@ void CPU::op_id(uint8_t operand){
     const bool is_dec = (operand & 0b1000); // check d bit, d=0 is increment, d=1 is decrement
     const uint8_t reg = (operand & 0b111); // mask out the register index, this time simple
 
-    clr_flags(FLAG_S | FLAG_Z | FLAG_V);
+    clr_flags(FLAG_V); // sz cleared in helper
 
     if (is_dec){
         GPR[reg]--;
@@ -103,11 +116,8 @@ void CPU::op_cpt(uint8_t operand){
     const uint8_t reg = (operand & 0b111);
 
     if (is_test) { // logical AND, no ACC update
-        clr_flags(FLAG_S | FLAG_Z);
         uint8_t res = (GPR[reg] & ACC);
-
-        if (res == 0) FLAGS |= FLAG_Z;
-        if (res & 0b10000000) FLAGS |= FLAG_S;
+        update_SZ_flags(res);
     } else { //cmp (arithmetic sub, no ACC update)
         h_alu(ACC, GPR[reg], true, false);
     }
@@ -133,8 +143,6 @@ void CPU::op_nt(uint8_t operand){
     // not/complement
     // operand xxxd = 0 ones comp (not) d = 1 twos comp (complement)
 
-    clr_flags(FLAG_S | FLAG_Z);
-
     const bool is_comp = operand & 0b1;
 
     if (is_comp) ACC = ~ACC + 1;
@@ -147,7 +155,6 @@ void CPU::op_anor(uint8_t operand){
     // and/or
     // operand drrr d = 0 AND, d = 1 OR
 
-    clr_flags(FLAG_S | FLAG_Z);
     const bool is_or = operand & 0b1000;
     const uint8_t reg = operand & 0b111;
 
@@ -179,7 +186,7 @@ void CPU::op_rtsh(uint8_t operand){
 
     const bool orig_carry = FLAGS & FLAG_C;
 
-    clr_flags(FLAG_C | FLAG_S | FLAG_Z);
+    clr_flags(FLAG_C);
 
     if (is_right){
         const bool orig_sign = ACC & 0x80;
