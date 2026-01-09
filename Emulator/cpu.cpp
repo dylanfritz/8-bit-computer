@@ -257,9 +257,26 @@ void CPU::op_rtsh(uint8_t operand){
 }
 void CPU::op_so(uint8_t operand){
     // stack operation
+    // operand drrr d=0 push d=1 pop
+    // sp points to unused top slot
+
+    const bool is_pop = operand & 0b1000;
+    const uint8_t reg = operand & 0b111;
+
+    if (is_pop) GPR[reg] = memory[++SP];
+    else memory[SP--] = GPR[reg];
 }
 void CPU::op_cr(uint8_t operand, uint8_t address){
     // call/return
+    // operand xxxd d=0 CALL, d=1 RET
+
+    bool is_ret = operand & 0b1;
+
+    if (is_ret) PC = memory[++SP];
+    else {
+        memory[SP--] = PC;
+        PC = address;
+    }
 }
 void CPU::op_ldi(uint8_t operand, uint8_t immediate){
     // load immediate
