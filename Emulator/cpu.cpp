@@ -3,6 +3,38 @@
 #include <iostream>
 
 
+void CPU::h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_ACC){ // computes a + b or a + (-b) and optionally stores the result in ACC
+
+    const bool as = (a & 0b10000000); //a sign bit before operation, used for overflow detection
+    const bool bs = (b & 0b10000000); //b sign bit before operation
+
+    uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
+    uint8_t result; // resulting value
+    bool rs; // result sign
+
+    clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
+
+    if (is_sub) sum = a + ~b + 1;
+    else sum = a + b;
+
+    result = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
+
+    rs = (result & 0b10000000); //result sign bit AFTER operation
+
+    // overflow flag V is difficult
+    // overflow occurs when sign of operands don't match but sign of output differs from first operand FOR SIGNED SUBTRACTION
+
+    const bool subtraction_overflow = ((bs != as) && (rs != as));
+    const bool addition_overflow = ((bs == as) && (rs != as));
+
+    if ((subtraction_overflow && is_sub) || (addition_overflow && !is_sub)) FLAGS |= FLAG_V;
+
+    if (sum & 0x100) FLAGS |= FLAG_C;
+    CPU::update_SZ_flags(result);
+
+    if (update_ACC) ACC = result;
+}
+
 void CPU::update_SZ_flags(uint8_t reg){
     clr_flags(FLAG_S | FLAG_Z);
     if (reg & 0b10000000) FLAGS |= FLAG_S;

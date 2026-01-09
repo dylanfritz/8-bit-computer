@@ -30,6 +30,8 @@ class CPU {
 
         void update_SZ_flags(uint8_t reg);
 
+        void h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_regs);
+
 
         void op_nop(uint8_t operand);
         void op_ma(uint8_t operand);
