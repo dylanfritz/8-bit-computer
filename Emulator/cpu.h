@@ -18,8 +18,14 @@ class CPU {
         uint8_t SP;
         uint8_t FLAGS;
 
-        inline void CPU::clr_flags(uint8_t mask){
+        inline void clr_flags(uint8_t mask){
             FLAGS &= ~mask;
+        }
+        inline void h_push(uint8_t val){
+            memory[SP--] = val;
+        }
+        inline uint8_t h_pop(){
+            return memory[++SP];
         }
 
         void update_SZ_flags(uint8_t reg);
@@ -40,6 +46,7 @@ class CPU {
         void op_so(uint8_t operand);
         void op_cr(uint8_t operand, uint8_t address);
         void op_ldi(uint8_t operand, uint8_t immediate);
+        void op_mvr(uint8_t operand);
 
     public:
         void reset();

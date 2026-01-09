@@ -258,26 +258,60 @@ void CPU::op_rtsh(uint8_t operand){
 void CPU::op_so(uint8_t operand){
     // stack operation
     // operand drrr d=0 push d=1 pop
+    // rrr = 000 targets ACC, 001-111 GPRr
     // sp points to unused top slot
 
     const bool is_pop = operand & 0b1000;
     const uint8_t reg = operand & 0b111;
 
-    if (is_pop) GPR[reg] = memory[++SP];
-    else memory[SP--] = GPR[reg];
+    if (is_pop) {
+        if (reg == 0){ // ACC target
+            ACC = h_pop();
+            update_SZ_flags(ACC);
+        } else GPR[reg] = h_pop();
+    }
+    else {
+        if (reg == 0) h_push(ACC);
+        else h_push(GPR[reg]);
+    }
 }
 void CPU::op_cr(uint8_t operand, uint8_t address){
     // call/return
     // operand xxxd d=0 CALL, d=1 RET
 
-    bool is_ret = operand & 0b1;
+    const bool is_ret = operand & 0b1;
 
-    if (is_ret) PC = memory[++SP];
+    if (is_ret) PC = h_pop();
     else {
-        memory[SP--] = PC;
+        h_push(PC);
         PC = address;
     }
 }
 void CPU::op_ldi(uint8_t operand, uint8_t immediate){
     // load immediate
+    // operand rrrr 0000-0111 GPRr 1000 ACC
+
+    const bool is_acc = operand & 0b1000;
+    const uint8_t reg = operand & 0b111;
+
+    if (operand > 0b1000) return; // 0b1001 - 0b1111 unused
+
+    if (is_acc) {
+        ACC = immediate;
+        update_SZ_flags(ACC);
+    } else GPR[reg] = immediate;
+    
+}
+
+void CPU::op_mvr(uint8_t operand){
+    // move register
+    // operand drrr d=0 ACC -> GPRr d=1 GPRr -> ACC
+
+    const bool to_ACC = operand & 0b1000;
+    const uint8_t reg = operand & 0b111;
+
+    if (to_ACC){
+        ACC = GPR[reg];
+        update_SZ_flags(ACC);
+    } else GPR[reg] = ACC;
 }
