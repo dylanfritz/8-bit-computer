@@ -3,8 +3,10 @@
 
 
 #include <stdint.h>
-#include <iostream>
 #include <vector>
+
+// debug
+constexpr bool DEBUG_ENABLED = true;
 
 constexpr uint8_t FLAG_S = 0b00001000;
 constexpr uint8_t FLAG_Z = 0b00000100;
@@ -16,7 +18,6 @@ constexpr uint8_t RESET_VECTOR = 0;
 
 class CPU {
     private:
-
         // state 
         uint8_t memory[256];
         uint8_t GPR[8];
@@ -41,6 +42,8 @@ class CPU {
 
         void h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_regs);
 
+        void print_hex(uint8_t val);
+
         // instruction handlers
         void op_nop(uint8_t operand);
         void op_ma(uint8_t operand);
@@ -60,9 +63,10 @@ class CPU {
         void op_mvr(uint8_t operand);
 
     public: // exposed
+        CPU();
         void reset();
         bool step();
-        void state_dmp();
+        void state_dmp(bool mem_dmp);
         void ld_program(const std::vector<uint8_t>& bytecode);
 
 };

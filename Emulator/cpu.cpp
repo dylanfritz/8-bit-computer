@@ -1,5 +1,8 @@
 #include "cpu.h"
 #include <stdint.h>
+#include <iostream>
+#include <bitset>
+#include <iomanip>
 
 CPU::CPU(){ //constructor
     reset();
@@ -12,6 +15,30 @@ void CPU::reset(){
     SP = STACK_BASE;
     FLAGS = 0;
     IR = 0;
+}
+
+void CPU::state_dmp(bool mem_dmp){
+    if (!DEBUG_ENABLED) return;
+
+    std::cout << "STATE DUMP"<< std::endl;
+    std::cout << "Program Counter: [" << +PC << "]" << std::endl;
+    std::cout << "Instruction Register: [" << std::bitset<8>(IR) << "]" << std::endl;
+    std::cout << "Stack Pointer: [" << +SP << "]" << std::endl;
+    std::cout << "Flag Register: [" << std::bitset<8>(FLAGS) << "]" << std::endl;
+    std::cout << "Accumulator: [" << std::bitset<8>(ACC) << "]" << std::endl;
+    for(uint8_t i = 0; i < 8; i++){
+        std::cout << "GPR" << +i << ": [" << std::bitset<8>(GPR[i]) << "]" << std::endl;
+    }
+    std::cout << "Top of Stack: [" << std::bitset<8>(memory[SP+1]) << "]" << std::endl;
+    if (mem_dmp) {
+        std::cout << "MEMORY DUMP"<< std::endl;
+        for(int i = 0; i < 256; i++){
+            print_hex(memory[i]);
+            std::cout << " ";
+            if (i % 16 == 15) std::cout << std::endl;
+        }
+    }
+
 }
 
 bool CPU::step(){
@@ -83,6 +110,10 @@ bool CPU::step(){
 
     return 0;
 
+}
+
+void CPU::print_hex(uint8_t value) {
+    std::cout << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)value << std::dec;
 }
 
 
