@@ -1,16 +1,87 @@
 #include "cpu.h"
 #include <stdint.h>
 
+CPU::CPU(){ //constructor
+    reset();
+}
+
 void CPU::reset(){
     for(uint8_t i = 0; i < 8; i++) { GPR[i] = 0; }
-    PC = RESET_VECTOR + 1;
+    PC = RESET_VECTOR;
     ACC = 0;
     SP = STACK_BASE;
     FLAGS = 0;
-    IR = memory[RESET_VECTOR];
+    IR = 0;
 }
 
-void CPU::step(){
+bool CPU::step(){
+    IR = memory[PC++]; // fetch
+    uint8_t opcode = IR >> 4; // opcode is upper nibble
+    uint8_t operand = IR & 0b1111; // operand is lower nibble
+
+    switch (opcode) { // decode 
+        case 0b0000: // nop
+            if (operand == 0b1111) return 1; // halt condition
+            else op_nop(operand);
+            break;
+        case 0b0001: // MA
+            op_ma(operand);
+            break;
+        case 0b0010: // ID
+            op_id(operand);
+            break;
+        case 0b0011: { // JMPS
+            uint8_t addr = memory[PC++];
+            op_jmps(operand, addr);
+            break;
+        }
+        case 0b0100: { // JMPC
+            uint8_t addr = memory[PC++];
+            op_jmpc(operand, addr);
+            break;
+        }
+        case 0b0101: // CPT
+            op_cpt(operand);
+            break;
+        case 0b0110: // AS
+            op_as(operand);
+            break;
+        case 0b0111: { // ASI
+            uint8_t imm = memory[PC++];
+            op_asi(operand, imm);
+            break;
+        }
+        case 0b1000: // NT
+            op_nt(operand);
+            break;
+        case 0b1001: // ANOR
+            op_anor(operand);
+            break;
+        case 0b1010: // XOR
+            op_xor(operand);
+            break;
+        case 0b1011: // RTSH
+            op_rtsh(operand);
+            break;
+        case 0b1100: // SO
+            op_so(operand);
+            break;  
+        case 0b1101: { // CR
+            uint8_t addr = memory[PC++];
+            op_cr(operand, addr);
+            break;
+        }
+        case 0b1110: { // LDI
+            uint8_t imm = memory[PC++];
+            op_ldi(operand, imm);
+            break;
+        }
+        case 0b1111: // MVR
+            op_mvr(operand);
+            break;
+    }
+
+    return 0;
 
 }
 

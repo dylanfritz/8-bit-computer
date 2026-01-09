@@ -1,3 +1,7 @@
+#ifndef CPU_H
+#define CPU_H
+
+
 #include <stdint.h>
 #include <iostream>
 #include <vector>
@@ -13,7 +17,7 @@ constexpr uint8_t RESET_VECTOR = 0;
 class CPU {
     private:
 
-        //state 
+        // state 
         uint8_t memory[256];
         uint8_t GPR[8];
         uint8_t PC;
@@ -22,6 +26,7 @@ class CPU {
         uint8_t FLAGS;
         uint8_t IR;
 
+        // helpers
         inline void clr_flags(uint8_t mask){
             FLAGS &= ~mask;
         }
@@ -36,7 +41,7 @@ class CPU {
 
         void h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_regs);
 
-
+        // instruction handlers
         void op_nop(uint8_t operand);
         void op_ma(uint8_t operand);
         void op_id(uint8_t operand);
@@ -54,12 +59,12 @@ class CPU {
         void op_ldi(uint8_t operand, uint8_t immediate);
         void op_mvr(uint8_t operand);
 
-    public:
+    public: // exposed
         void reset();
-        void step();
+        bool step();
         void state_dmp();
         void ld_program(const std::vector<uint8_t>& bytecode);
 
-
-
 };
+
+#endif
