@@ -1,6 +1,5 @@
 #include "cpu.h"
 #include <stdint.h>
-#include <iostream>
 
 
 void CPU::h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_ACC){ // computes a + b or a + (-b) and optionally stores the result in ACC
@@ -12,7 +11,7 @@ void CPU::h_alu(uint8_t a, uint8_t b, bool is_sub, bool update_ACC){ // computes
     uint8_t result; // resulting value
     bool rs; // result sign
 
-    clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
+    clr_flags(FLAG_C | FLAG_V); // s and z are cleared in sz update function
 
     if (is_sub) sum = a + ~b + 1;
     else sum = a + b;
@@ -110,115 +109,25 @@ void CPU::op_cpt(uint8_t operand){
         if (res == 0) FLAGS |= FLAG_Z;
         if (res & 0b10000000) FLAGS |= FLAG_S;
     } else { //cmp (arithmetic sub, no ACC update)
-        clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
-
-        bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
-        bool as = (ACC & 0b10000000); //ACC sign bit before operation
-
-        uint16_t sum = ACC + ~(GPR[reg]) + 1;
-        
-
-        // overflow flag V is difficult
-        // overflow occurs when sign of operands don't match but sign of output differs from first operand FOR SIGNED SUBTRACTION
-
-        uint8_t res = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
-
-        bool ss = (res & 0b10000000); //res sign bit AFTER operation
-
-        if ((rs != as) && (ss != as)) FLAGS |= FLAG_V;
-        if (sum & 0x100) FLAGS |= FLAG_C;
-        CPU::update_SZ_flags(res);
-
+        h_alu(ACC, GPR[reg], true, false);
     }
 }
 void CPU::op_as(uint8_t operand){
     // add/subtract
     // operand drrr d=0 is add, d=1 is subtract
 
-    clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
-
     const bool is_sub = operand & 0b1000;
     const uint8_t reg = operand & 0b111;
 
-    const bool rs = (GPR[reg] & 0b10000000); //register sign bit before operation, used for overflow detection
-    const bool as = (ACC & 0b10000000); //ACC sign bit before operation
-
-    uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
-    bool ss;
-
-    if (is_sub) {
-        sum = ACC + ~(GPR[reg]) + 1;
-
-        ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
-
-        ss = (ACC & 0b10000000); //ACC sign bit AFTER operation
-
-        // overflow flag V is difficult
-        // overflow occurs when sign of operands don't match but sign of output differs from first operand FOR SIGNED SUBTRACTION
-
-        if ((rs != as) && (ss != as)) FLAGS |= FLAG_V;
-
-
-    } else {
-
-        sum = ACC + GPR[reg];
-
-        ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
-
-        ss = (ACC & 0b10000000); //ACC sign bit AFTER operation
-
-        // overflow flag V is difficult
-        // overflow occurs when sign of operands match but sign of output differs FOR SIGNED ADDITION
-
-        if ((rs == as) && (ss != as)) FLAGS |= FLAG_V;
-    } 
-
-    if (sum & 0b100000000) FLAGS |= FLAG_C; // if 0000 0001 xxxx xxxx in uint16, carry occured
-    CPU::update_SZ_flags(ACC);
+    h_alu(ACC, GPR[reg], is_sub, true);
 }
 void CPU::op_asi(uint8_t operand, uint8_t immediate){
     // add/subtract immediate
     // operand xxxd d=0 is add, d=1 is subtract
 
-    clr_flags(FLAG_S | FLAG_Z | FLAG_C | FLAG_V);
-
     const bool is_sub = operand & 0b1;
 
-    const bool is = (immediate & 0b10000000); //immediate sign bit before operation, used for overflow detection
-    const bool as = (ACC & 0b10000000); //ACC sign bit before operation
-
-    uint16_t sum; // make sum 16 bit so we can use bit 8 as the carry
-    bool ss;
-
-    if (is_sub) {
-        sum = ACC + ~(immediate) + 1;
-
-        ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
-
-        ss = (ACC & 0b10000000); //ACC sign bit AFTER operation
-
-        // overflow flag V is difficult
-        // overflow occurs when sign of operands don't match but sign of output differs from first operand FOR SIGNED SUBTRACTION
-
-        if ((is != as) && (ss != as)) FLAGS |= FLAG_V;
-
-
-    } else {
-
-        sum = ACC + immediate;
-
-        ACC = ((uint8_t) sum & 0xFF); // mask out lsb 8 bits then cast instead of just truncating
-
-        ss = (ACC & 0b10000000); //ACC sign bit AFTER operation
-
-        // overflow flag V is difficult
-        // overflow occurs when sign of operands match but sign of output differs FOR SIGNED ADDITION
-
-        if ((is == as) && (ss != as)) FLAGS |= FLAG_V;
-    } 
-
-    if (sum & 0b100000000) FLAGS |= FLAG_C; // if 0000 0001 xxxx xxxx in uint16, carry occured
-    CPU::update_SZ_flags(ACC);
+    h_alu(ACC, immediate, is_sub, true);
 }
 void CPU::op_nt(uint8_t operand){
     // not/complement
