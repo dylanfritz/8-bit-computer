@@ -3,6 +3,7 @@
 #include <iostream>
 #include <bitset>
 #include <iomanip>
+#include <vector>
 
 CPU::CPU(){ //constructor
     reset();
@@ -37,6 +38,21 @@ void CPU::state_dmp(bool mem_dmp){
             std::cout << " ";
             if (i % 16 == 15) std::cout << std::endl;
         }
+    }
+
+}
+
+void CPU::ld_mem(const std::vector<uint8_t>& bytecode){
+    int len = bytecode.size();
+    if (len > 256) {
+        std::cout << "LOAD FAILED (Program length cannot exceed 256 bytes)" << std::endl;
+        return;
+    }
+    for (int i = 0; i < len; i++){
+        memory[i] = bytecode[i]; // load program
+    } 
+    for (int i = len; i < 256; i++) {
+        memory[i] = 0; // pad with zeros
     }
 
 }
