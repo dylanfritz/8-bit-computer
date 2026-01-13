@@ -16,7 +16,7 @@ Decimal with no prefix ; 15
 LABELS
 
 Labels are used to define points in the program to jump to, without remembering specific addresses. 
-A label can be any unique alphanumeric non-keyword string ending in a colon (:). Some example labels below.
+A label can be any unique alphanumeric non-keyword string ending in a colon (:). Some example labels:
 
 Loop: 
 Here1:
