@@ -95,7 +95,7 @@ bool CPU::step(){
             break;
         }
         case 0b1000: // NT
-            op_nt(operand);
+            op_comp(operand);
             break;
         case 0b1001: // ANOR
             op_anor(operand);
@@ -257,7 +257,7 @@ void CPU::op_asi(uint8_t operand, uint8_t immediate){
 
     h_alu(ACC, immediate, is_sub, true);
 }
-void CPU::op_nt(uint8_t operand){
+void CPU::op_comp(uint8_t operand){
     // not/complement
     // operand xxxd = 0 ones comp (not) d = 1 twos comp (complement)
 

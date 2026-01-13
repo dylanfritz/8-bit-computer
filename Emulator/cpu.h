@@ -53,7 +53,7 @@ class CPU {
         void op_cpt(uint8_t operand);
         void op_as(uint8_t operand);
         void op_asi(uint8_t operand, uint8_t immediate);
-        void op_nt(uint8_t operand);
+        void op_comp(uint8_t operand);
         void op_anor(uint8_t operand);
         void op_xor(uint8_t operand);
         void op_rtsh(uint8_t operand);
