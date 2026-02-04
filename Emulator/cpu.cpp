@@ -4,6 +4,8 @@
 #include <bitset>
 #include <iomanip>
 #include <vector>
+#include <fstream>
+#include <string>
 
 CPU::CPU(){ //constructor
     reset();
@@ -16,6 +18,37 @@ void CPU::reset(){
     SP = STACK_BASE;
     FLAGS = 0;
     IR = 0;
+}
+
+bool CPU::ld_file(const std::string& file_name) {
+    std::ifstream file(file_name, std::ios::binary);
+    if (!file){
+        std::cout << "LOAD FAILED (Could not open file or does not exist)" << std::endl;
+        return false;
+    }
+
+    file.seekg(0, std::ios::end);
+    std::streamsize size = file.tellg();
+    if (size > 256) {
+        std::cout << "LOAD FAILED (Program length cannot exceed 256 bytes)" << std::endl;
+        return false;
+    }
+    file.seekg(0, std::ios::beg);
+
+    std::vector<uint8_t> buffer(size);
+
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+        std::cout << "LOAD FAILED (Could not read file)" << std::endl;
+        return false;
+    }
+
+
+
+    ld_mem(buffer);
+
+    state_dmp(true);
+
+    return true;
 }
 
 void CPU::state_dmp(bool mem_dmp){

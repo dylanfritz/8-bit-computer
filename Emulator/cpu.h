@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <string>
 
 // debug
 constexpr bool DEBUG_ENABLED = true;
@@ -68,7 +69,7 @@ class CPU {
         bool step();
         void state_dmp(bool mem_dmp);
         void ld_mem(const std::vector<uint8_t>& bytecode);
-        void rd_file();
+        bool ld_file(const std::string& file_name);
 
 };
 
