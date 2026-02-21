@@ -1,7 +1,7 @@
 # 8-Bit Computer Architecture and Instruction Set
 
 ## Abstract
-The goal of this project is to design and implement an 8-bit computer architecture, designing all parts from scratch. The final product will be an 8-bit computer, simulated in FPGA logic using SystemVerilog, with a custom instruction set and assembly language to render it fully programmable. It also features an assembler which will convert the high-level assembly into bytecode which can be fed directly into the computer's virtual memory. An emulator for this architecture written in C++ was also made, used to verify the architecture and debug before committing to hardware, as well as enabling faster iteration of the assembler.
+The goal of this project is to design and implement an 8 bit computer architecture, designing all parts from scratch. The final product will be an 8 bit computer, simulated in FPGA logic using SystemVerilog, with a custom instruction set and assembly language to render it fully programmable, as well as an assembler which will convert the high level assembly into byte code which can be fed directly into the computer’s virtual memory. I have also made an emulator for this architecture written in C++, used to verify the architecture and debug before committing to hardware, as well as enabling faster iteration of the assembler.
 
 ## Overview of Machine
 * An 8-bit PC (program counter) register points to the next instruction address.
