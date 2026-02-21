@@ -156,7 +156,7 @@ The goal of this project is to design and implement an 8-bit computer architectu
 
 ---
 
-## State and Memory Dump
+## Example Program with Final State and Memory Dump
 
 ```text
 LDI ACC, 0xFF;0,1
